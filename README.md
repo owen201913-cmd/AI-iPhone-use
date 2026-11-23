@@ -1,7 +1,7 @@
 # AI iPhone Use
 
 **讓 AI 看見、操作你的 iPhone，也能在手機上跑程式。**<br><br>
-在 Windows 上用 Codex 連接自己的 iPhone。Pinky 用來操作 App，iSH Shell 用來讀檔、改碼和跑測試，USB 工具則能用資料線直接看畫面、點按和輸入。每套都有獨立的下載檔與安裝說明。
+在 Windows 上用 Codex、Claude Code 或其他支援本機 MCP 的 AI 連接自己的 iPhone。Pinky 用來操作 App，iSH Shell 用來讀檔、改碼和跑測試，USB 工具則能用資料線直接看畫面、點按和輸入。
 
 ## 下載你要的功能
 
@@ -12,6 +12,12 @@
 | **USB 控制** · 看畫面、滑動、點擊、輸入 | [下載 USB ZIP](https://github.com/owen201913-cmd/iphone-use/raw/refs/heads/main/downloads/iphone-use-usb.zip) | [USB 安裝指南](docs/usb.md) |
 
 將選好的 ZIP 解壓到打算長期保留的目錄。每包都有自己的 `README.md` 與 `install.ps1`，安裝不同包可並存。iSH 的背景批次是額外選項，使用一般終端只需 App Store 版。[背景版下載與簽署](docs/ish.md#選用背景工作)
+
+| 你打算怎麼用？ | 從這裡開始 |
+| --- | --- |
+| 在 Codex 用現成外掛 | 解壓選好的 ZIP → 在含 `install.ps1` 的目錄執行 `.\install.ps1` → 依包內 `README.md` 啟用並配對 → 開新對話。 |
+| 在 Claude Code、Claude Desktop、VS Code 或其他本機 MCP 用戶端使用 | 解壓同一份 ZIP → 安裝所選功能的依賴 → 把 `server.mjs` 加到你的 AI。[其他 AI 連接教學](docs/MCP.md) |
+| 改程式後製作自己的外掛 ZIP | 取得完整原始碼 → 修改、測試、打包 → 驗證三個獨立下載檔。[重新打包外掛](docs/guide.md#重新打包外掛) |
 
 ## Windows 快速開始
 
@@ -68,4 +74,4 @@ USB 畫面後端使用 iOS 17.4 起提供的 CoreDeviceProxy。手機還須提�
 
 執行 `npm ci --ignore-scripts`、`npm test` 和 `py -3 -B -m unittest discover -s test -p "test_*.py"`。GitHub 的 `Windows tests` 會跑這些測試並匯入 USB 驅動套件。測試使用模擬裝置、本機 SSH 和測試 IPA。實體手勢、App 簽署和手機背景執行可依[真機驗收步驟](docs/guide.md#真機驗收)測試。[專案授權](LICENSE) · [第三方元件](NOTICE.md)
 
-變更功能或安裝指南後，執行 `py -3 scripts/build-downloads.py` 更新 `downloads/` 中的三個 ZIP。CI 會比對公開下載檔與原始碼。
+從修改原始碼到交付 ZIP 的完整指令、輸出位置與驗收方式，見[重新打包外掛](docs/guide.md#重新打包外掛)。

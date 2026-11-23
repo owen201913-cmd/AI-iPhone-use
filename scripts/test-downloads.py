@@ -34,6 +34,7 @@ def check(folder, feature):
     assert (cwd / "ios").exists() == (feature == "ish")
     assert (cwd / "lib/pinky-bridge.mjs").exists() == (feature == "pinky")
     assert (cwd / "scripts/iphone-usb-ui.py").exists() == (feature == "usb")
+    assert (cwd / "MCP.md").read_bytes() == (PROJECT / "docs/MCP.md").read_text(encoding="utf-8").encode("utf-8")
     npm = "npm.cmd" if os.name == "nt" else "npm"
     subprocess.run([npm, "ci", "--ignore-scripts", "--no-audit", "--no-fund"], cwd=cwd, check=True)
     assert (cwd / "node_modules/ssh2").exists() == (feature == "ish")

@@ -2,6 +2,8 @@
 
 首次安裝可直接選 [Pinky 安裝指南](pinky.md)、[iSH Shell 安裝指南](ish.md)，或選擇 [USB 與其他組合](../README.md#windows-快速開始)。所有 `npm` 和 `node` 指令都在專案目錄的 PowerShell 執行。Codex 裡則可直接用中文描述目標。
 
+用 Claude Code、Claude Desktop、VS Code 或其他 AI，請先看[本機 MCP 連接教學](MCP.md)。想發行修改過的版本，請看[重新打包外掛](#重新打包外掛)。
+
 | 我想做什麼 | 開啟功能 | 怎麼知道成功 |
 | --- | --- | --- |
 | 看手機畫面、操作前景 App | 插上 USB，解鎖並信任電腦。執行 `npm run setup -- enable` 和 `npm run setup -- usb`。連接一支手機即可。 | 在新的 Codex 對話說「用 Iphone use (Standalone) 看現在畫面」。應看到 PNG 與觀察 ID。 |
@@ -40,6 +42,33 @@
 背景版的 `background` 接受一行標題和 1–10 段依序執行的指令，每段最多 60 秒。手機顯示標題後由使用者按「開始」。呼叫可附 `waitMs` 最多等 40 秒，或使用 `queueUntilOpenMs` 在目前外掛工作階段中等 App 開啟（最多 10 分鐘）。`cancel_wait` 僅取消尚待派送的等候。工作已派送時依原 `requestId` 用 `iphone_receipt` 查詢。前景作業的回執請用 `iphone_workspace` 的 `receipt` 並選相同環境。
 
 **自行建立背景版。** 在自己的 GitHub fork 開啟 **Actions → Build iSH Workspace → Run workflow**。成功後在該次執行的 **Artifacts** 下載 `iSH-Workspace-unsigned`，解壓縮得到 IPA。依 [背景版下載、個人化與配對指令](ish.md#選用背景工作) 把這台電腦的公鑰寫入本機 IPA。用支援的 Apple 簽署工具安裝到自己的裝置；在 Windows 可於 Sideloadly 選取 iPhone 與個人化後的 IPA，使用自己的 Apple 帳號完成簽署。若 iOS 要求信任開發者，請在「設定 → 一般 → VPN 與裝置管理」選自己的簽署身分。完成後開啟 **iSH Workspace**，讀取該 App 的主機指紋並在電腦配對。私鑰保留在電腦。已個人化 IPA 與簽署資料應留在本機。
+
+## 重新打包外掛
+
+如果只是安裝別人做好的外掛，從[首頁下載](../README.md#下載你要的功能)一個 ZIP 即可。下列步驟適用於要修改功能、更新說明或發行自己版本的開發者。
+
+1. 準備 Git、Node.js 22.16 以上（含 npm）和 Python 3（Windows 使用 `py`）。在 PowerShell 取得完整原始碼。已經有自己的 fork 時，使用該 fork 的網址。
+
+   ```powershell
+   git clone https://github.com/owen201913-cmd/iphone-use.git
+   cd iphone-use
+   npm.cmd ci --ignore-scripts
+   ```
+
+2. 修改所需功能或說明。每包的首頁來自 `docs/pinky.md`、`docs/ish.md` 或 `docs/usb.md`，共用的其他 AI 教學是 `docs/MCP.md`。新增執行時需要的檔案時，請更新 `scripts/build-downloads.py` 對應功能的檔案清單。打包器會產生各包專用的 Codex 外掛描述、套件設定和依賴清單。
+
+3. 在專案根目錄依序執行。若有指令失敗，依輸出的錯誤修正再繼續。
+
+   ```powershell
+   npm.cmd test
+   py -3 -B -m unittest discover -s test -p "test_*.py"
+   py -3 scripts/build-downloads.py
+   py -3 scripts/build-downloads.py --check
+   py -3 scripts/test-downloads.py
+   ```
+
+4. 到 `downloads/` 取用 `iphone-use-pinky.zip`、`iphone-use-ish.zip`、`iphone-use-usb.zip`。`--check` 確認三包與目前原始碼相符；最後一個指令會分別解壓、安裝依賴、啟動 MCP 伺服器並比對工具清單。手機配對、畫面和手勢另外按[真機驗收](#真機驗收)確認。
+5. 發行時將原始碼變更與更新的 ZIP 一起提交。如果要從自己的 GitHub fork 分發，先更新首頁和各指南的下載連結，並將打包器的 `WEB` 改為自己儲存庫的文件網址，再重新打包。使用者只需下載需要的那一包。
 
 ## 真機驗收
 

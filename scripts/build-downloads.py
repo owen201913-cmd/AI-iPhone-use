@@ -71,6 +71,7 @@ def package_files(feature):
     files["plugin/.codex-plugin/plugin.json"] = json_text(descriptor)
     guide = source(f"docs/{feature}.md")
     files["README.md"] = guide.replace("](../README.md", "](" + WEB + "README.md").replace("](guide.md", "](" + WEB + "docs/guide.md")
+    files["MCP.md"] = source("docs/MCP.md")
     if feature != "ish":
         files["NOTICE.md"] = files["NOTICE.md"].replace("](ios/", "](" + WEB + "ios/")
     return files

@@ -3,6 +3,8 @@
 **讓 AI 透過 Pinky 在 iPhone 上找按鈕、切分頁、批次操作。**<br><br>
 這條路徑適合看手機畫面、用控制項名稱導航、切換分頁與批次操作。安裝後，Codex 只會列出 `pinky`。手機上不用安裝 iSH，電腦上的外掛也不用 Python。
 
+下方是 Codex 的安裝流程。使用 Claude Code、Claude Desktop 或其他支援本機 MCP 的 AI，請從[其他 AI 連接教學](MCP.md)開始。
+
 1. **電腦下載。** 從 [Pinky 官方最新版](https://github.com/DIYgod/pinky/releases/latest) 的 **Assets** 選 Windows 安裝檔（x64 檔名為 `pinky-setup-…-amd64.exe`）。Windows 也需要 [Apple Devices](https://apps.microsoft.com/detail/9np83lwlpz9k) 或上游支援的 iTunes 來辨識 USB 裝置。
 2. **手機配對。** 用資料線連接 iPhone，解鎖並信任電腦。在 Pinky 選 **Add phone → iPhone**。需要哪些手機元件取決於 iOS 版本。上游目前指示，iOS 17.4–26 要完整觸控，需用 Mac 和 Xcode 一次安裝 Pinky 的手機端元件；iOS 27 起有免裝手機端的路徑。請按自己的版本查看[官方配對說明](https://github.com/DIYgod/pinky#get-started)。
 3. **連到 Codex。** [下載 Pinky 專用 ZIP 並解壓縮](https://github.com/owen201913-cmd/iphone-use/raw/refs/heads/main/downloads/iphone-use-pinky.zip)，準備好 [Codex CLI](https://developers.openai.com/codex/cli/) 和 [Node.js 22.16 以上](https://nodejs.org/en/download)。在含 `install.ps1` 的目錄開 PowerShell，使用安裝後的 `Pinky.exe` 實際路徑：

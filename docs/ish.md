@@ -3,6 +3,8 @@
 **讓 AI 在 iPhone 的 Linux 工作區讀檔、改碼、跑測試。**<br><br>
 這條路徑只需要 iSH。Codex 會列出 `iphone_workspace` 和背景回執工具 `iphone_receipt`。一般終端可直接使用 App Store 版本，簽署與編譯只在選用背景工作時才需要。
 
+下方是 Codex 的安裝流程。使用 Claude Code、Claude Desktop 或其他支援本機 MCP 的 AI，請從[其他 AI 連接教學](MCP.md)開始。
+
 1. **手機下載。** 在 iPhone 開啟 [App Store 的 iSH Shell](https://apps.apple.com/app/ish-shell/id1436902243) 並安裝。開發者為 Theodore Dubois。[iSH 官網](https://ish.app/)
 2. **電腦準備。** [下載 iSH 專用 ZIP 並解壓縮](https://github.com/owen201913-cmd/iphone-use/raw/refs/heads/main/downloads/iphone-use-ish.zip)，準備 [Codex CLI](https://developers.openai.com/codex/cli/)、[Node.js 22.16 以上](https://nodejs.org/en/download)、[Python for Windows（含 py 啟動器）](https://www.python.org/downloads/windows/) 和 [Apple Devices](https://apps.microsoft.com/detail/9np83lwlpz9k)。以 USB 接上一支已解鎖並信任這台電腦的 iPhone。
 3. **安裝與配對。** 在含 `install.ps1` 的目錄開 PowerShell。一般 iSH 使用 Python 標準函式庫連接 USB，單選時會略過畫面控制用的 Python 套件。

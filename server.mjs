@@ -13,7 +13,7 @@ const instructions = [
   features.has('ish') && 'Use iphone_workspace for commands in the paired iSH environment.',
   'Respect device approval, pause and handoff. Consult the matching receipt after an uncertain action.',
 ].filter(Boolean).join(' ');
-const server = new McpServer({name:'Iphone use',version:'1.0.0'}, {instructions});
+const server = new McpServer({name:'Iphone use',title:'AI-iPhone-use',version:'1.0.0'}, {instructions});
 const services = [];
 for (const feature of features) {
   const backend = await import('./lib/backends/' + feature + '.mjs');

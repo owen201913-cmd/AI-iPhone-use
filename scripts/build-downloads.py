@@ -10,7 +10,7 @@ import zipfile
 
 
 PROJECT = Path(__file__).resolve().parents[1]
-WEB = "https://github.com/owen201913-cmd/iphone-use/blob/main/"
+WEB = "https://github.com/owen201913-cmd/AI-iPhone-use/blob/main/"
 COMMON = (
     "LICENSE", "NOTICE.md", "server.mjs", "install.ps1", "scripts/setup.mjs",
     "lib/paths.mjs", "lib/features.mjs", "lib/permissions.mjs", "lib/host-lifecycle.mjs",
@@ -67,7 +67,7 @@ def package_files(feature):
     descriptor = json.loads(source("plugin/.codex-plugin/plugin.json"))
     descriptor["name"] = "iphone-use-" + feature
     descriptor["description"] = descriptor["interface"]["shortDescription"] = DESCRIPTIONS[feature]
-    descriptor["interface"]["displayName"] = "iPhone Use · " + LABELS[feature]
+    descriptor["interface"]["displayName"] = "AI-iPhone-use · " + LABELS[feature]
     files["plugin/.codex-plugin/plugin.json"] = json_text(descriptor)
     guide = source(f"docs/{feature}.md")
     files["README.md"] = guide.replace("](../README.md", "](" + WEB + "README.md").replace("](guide.md", "](" + WEB + "docs/guide.md")

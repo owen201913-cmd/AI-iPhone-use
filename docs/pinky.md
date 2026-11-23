@@ -1,22 +1,18 @@
-# 用 Pinky 操作 iPhone
+# Control iPhone apps with Pinky
 
-**讓 AI 透過 Pinky 在 iPhone 上找按鈕、切分頁、批次操作。**<br><br>
-這條路徑適合看手機畫面、用控制項名稱導航、切換分頁與批次操作。安裝後，Codex 只會列出 `pinky`。手機上不用安裝 iSH，電腦上的外掛也不用 Python。
+**Find controls by name and navigate your iPhone with Pinky.**<br><br>
+Use this Windows package for visual observations, named tabs, and batches of actions. It exposes one tool, `pinky`. The package requires Pinky on your PC. For Claude or another local MCP client, follow [Connect another AI client](MCP.md).
 
-下方是 Codex 的安裝流程。使用 Claude Code、Claude Desktop 或其他支援本機 MCP 的 AI，請從[其他 AI 連接教學](MCP.md)開始。
+1. **Install Pinky.** Open the [official Pinky release](https://github.com/DIYgod/pinky/releases/latest) and select the Windows installer under **Assets** (the x64 filename includes `amd64.exe`). Windows also needs [Apple Devices](https://apps.microsoft.com/detail/9np83lwlpz9k) or an upstream-supported iTunes installation for USB device discovery.
+2. **Pair the phone.** Connect it by USB, unlock it, trust the PC, and select **Add phone → iPhone** in Pinky. On iOS 17.4–26, upstream documents a one-time Mac and Xcode installation for full touch control. For iOS 27 and later, check its helper-free setup and the requirements for your device. [Pinky pairing instructions](https://github.com/DIYgod/pinky#get-started)
+3. **Connect to Codex.** [Download the Pinky package](https://github.com/owen201913-cmd/AI-iPhone-use/raw/refs/heads/main/downloads/iphone-use-pinky.zip) and extract it to a permanent folder. Install [Codex CLI](https://developers.openai.com/codex/cli/) and [Node.js 22.16 or later](https://nodejs.org/en/download). Open PowerShell in the folder containing `install.ps1`. Replace the sample executable path with the actual location:
 
-1. **電腦下載。** 從 [Pinky 官方最新版](https://github.com/DIYgod/pinky/releases/latest) 的 **Assets** 選 Windows 安裝檔（x64 檔名為 `pinky-setup-…-amd64.exe`）。Windows 也需要 [Apple Devices](https://apps.microsoft.com/detail/9np83lwlpz9k) 或上游支援的 iTunes 來辨識 USB 裝置。
-2. **手機配對。** 用資料線連接 iPhone，解鎖並信任電腦。在 Pinky 選 **Add phone → iPhone**。需要哪些手機元件取決於 iOS 版本。上游目前指示，iOS 17.4–26 要完整觸控，需用 Mac 和 Xcode 一次安裝 Pinky 的手機端元件；iOS 27 起有免裝手機端的路徑。請按自己的版本查看[官方配對說明](https://github.com/DIYgod/pinky#get-started)。
-3. **連到 Codex。** [下載 Pinky 專用 ZIP 並解壓縮](https://github.com/owen201913-cmd/iphone-use/raw/refs/heads/main/downloads/iphone-use-pinky.zip)，準備好 [Codex CLI](https://developers.openai.com/codex/cli/) 和 [Node.js 22.16 以上](https://nodejs.org/en/download)。在含 `install.ps1` 的目錄開 PowerShell，使用安裝後的 `Pinky.exe` 實際路徑：
+   ```powershell
+   .\install.ps1
+   node scripts/setup.mjs enable
+   node scripts/setup.mjs pinky "C:\Path\To\Pinky.exe"
+   ```
 
-```powershell
-.\install.ps1
-npm run setup -- enable
-npm run setup -- pinky "C:\Path\To\Pinky.exe"
-```
+4. **Verify the connection.** In a new Codex chat, ask, “Use Pinky to list the tools provided by this version.” Then ask it to observe your phone and respond to Pinky’s authorization prompt. After updating Pinky, rerun the final setup command to register the new executable.
 
-4. **驗證。** 開一個新的 Codex 對話，說「用 Pinky 列出這個版本提供的手機工具」。看到工具清單後，再說「用 Pinky 觀察我的 iPhone」，並依 Pinky 的提示核准裝置工作。更新 Pinky 後，重新執行最後一行以登錄新執行檔。
-
-如果只有 Windows，而該 iOS 版本的 Pinky 手機元件無法安裝，也可以選本專案的 [USB 畫面與手勢](../README.md#真機畫面與操作)。[完整 Pinky 操作清單](guide.md#pinky-導航與批次)
-
-移除本包可執行 `codex plugin remove iphone-use-pinky@iphone-use-pinky-local`。
+If your iOS version needs a helper you cannot install, see [direct USB control](../README.md#downloads). For supported actions, see [Pinky navigation and batches](guide.md#pinky-navigation-and-batches). To remove this Codex plugin, run `codex plugin remove iphone-use-pinky@iphone-use-pinky-local`.

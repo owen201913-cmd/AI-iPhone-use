@@ -1,9 +1,9 @@
 {
   "name": "iphone-use-standalone",
   "version": "1.0.0",
-  "description": "Local iPhone screen control and iSH workspaces for Codex over stdio.",
+  "description": "Control a paired iPhone and run iSH workspace tasks from Windows over local MCP.",
   "interface": {
-    "displayName": "Iphone use (Standalone)",
+    "displayName": "AI-iPhone-use",
     "shortDescription": "Control your paired iPhone and run iSH workspace tasks.",
     "category": "Productivity"
   },

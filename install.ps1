@@ -59,7 +59,7 @@ try {
     $launch = @{command=$nodeExe; args=@((Join-Path $projectDir 'server.mjs')); env=@{IPHONE_USE_HOME=$stateBase}}
     Write-JsonFile (Join-Path $pluginDir '.mcp.json') @{mcpServers=@{$pluginId=$launch}}
     $entry = @{name=$pluginId;source=@{source='local';path="./plugins/$pluginId"};category='Productivity';policy=@{installation='AVAILABLE';authentication='ON_INSTALL'}}
-    Write-JsonFile (Join-Path $marketDir '.agents/plugins/marketplace.json') @{name=$marketName;interface=@{displayName='iPhone Use Local'};plugins=@($entry)}
+    Write-JsonFile (Join-Path $marketDir '.agents/plugins/marketplace.json') @{name=$marketName;interface=@{displayName='AI-iPhone-use Local'};plugins=@($entry)}
     & codex plugin marketplace add $marketDir
     if ($LASTEXITCODE -ne 0) { throw 'Codex could not register the local marketplace.' }
     & codex plugin add "$pluginId@$marketName"

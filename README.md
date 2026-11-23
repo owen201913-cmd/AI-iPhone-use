@@ -7,17 +7,21 @@ Connect an iPhone to a Windows PC and choose the tools your AI needs. USB provid
 
 | What you want to do | Windows package | Setup |
 | --- | --- | --- |
-| Navigate apps by control name and run batches of actions | [Download Pinky](https://github.com/owen201913-cmd/AI-iPhone-use/raw/refs/heads/main/downloads/iphone-use-pinky.zip) | [Pair with Pinky](docs/pinky.md) · [Pinky desktop app](https://github.com/DIYgod/pinky/releases/latest) |
-| Edit files and run code inside a Linux shell on iPhone | [Download iSH](https://github.com/owen201913-cmd/AI-iPhone-use/raw/refs/heads/main/downloads/iphone-use-ish.zip) | [Set up iSH](docs/ish.md) · [iSH Shell on the App Store](https://apps.apple.com/app/ish-shell/id1436902243) |
-| See the screen, tap, swipe, and type over USB | [Download USB control](https://github.com/owen201913-cmd/AI-iPhone-use/raw/refs/heads/main/downloads/iphone-use-usb.zip) | [Set up USB control](docs/usb.md) |
+| Navigate apps by control name and run batches of actions | [Pinky integration for Windows](https://github.com/owen201913-cmd/AI-iPhone-use/releases/latest/download/iphone-use-pinky.zip) | [Pair with Pinky](docs/pinky.md) · [Pinky desktop app](https://github.com/DIYgod/pinky/releases/latest) |
+| Edit files and run code inside a Linux shell on iPhone | [iSH integration for Windows](https://github.com/owen201913-cmd/AI-iPhone-use/releases/latest/download/iphone-use-ish.zip) | [Set up iSH](docs/ish.md) · [iSH Shell on the App Store](https://apps.apple.com/app/ish-shell/id1436902243) |
+| See the screen, tap, swipe, and type over USB | [USB control for Windows](https://github.com/owen201913-cmd/AI-iPhone-use/releases/latest/download/iphone-use-usb.zip) | [Set up USB control](docs/usb.md) |
 
 ## Install a package
 
 1. Extract the ZIP to a folder you intend to keep. Each package has a `README.md` with its own device requirements and pairing instructions.
-2. **Codex:** Open PowerShell in the folder containing `install.ps1` and run `.\install.ps1`. Run `node scripts/setup.mjs enable`, pair the phone as described in the package README, and start a new Codex chat.
+2. **Codex:** Install [PowerShell 7](https://learn.microsoft.com/powershell/scripting/install/installing-powershell-on-windows) and run `pwsh -File .\install.ps1` in the extracted folder containing `install.ps1`. Run `node scripts/setup.mjs enable`, pair the phone as described in the package README, and start a new Codex chat.
 3. **Other AI apps and models:** Open `MCP.md` inside the same ZIP. Choose a setup by capability: local MCP (including Cursor, Gemini CLI, LM Studio, Claude, and VS Code), remote HTTPS connectors, or a function-calling API. Local clients use Node.js and work without a Codex installation. [Choose a connection method](docs/MCP.md)
 
 For a first check, ask the USB tool to show the current screen, Pinky to list its tools, or iSH to run `pwd`. You can install more than one package. Use one client at a time for input on the same phone. The standard App Store version of iSH is sufficient for foreground shell work. [Optional background jobs](docs/ish.md#optional-background-jobs)
+
+If Windows blocks the script, open the downloaded ZIP’s **Properties** in File Explorer, select **Unblock** if shown for this trusted download, and extract it again. For an organization-managed policy, use its approved installation process.
+
+**Updating an existing installation.** Extract the new package to a permanent folder and rerun the installer using the same data directory. Start a new client session. If you configured your MCP client manually, update its `server.mjs` path if the folder changed.
 
 ## Work from source
 
@@ -28,7 +32,7 @@ git clone https://github.com/owen201913-cmd/AI-iPhone-use.git
 cd AI-iPhone-use
 ```
 
-| Features | Run one command in PowerShell |
+| Features | Run one command inside PowerShell 7 |
 | --- | --- |
 | Pinky | `.\install.ps1 -Features Pinky` |
 | iSH Shell or iSH Workspace | `.\install.ps1 -Features Ish` |

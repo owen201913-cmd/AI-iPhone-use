@@ -1,6 +1,6 @@
 {
   "name": "iphone-use-standalone",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Control a paired iPhone and run iSH workspace tasks from Windows over local MCP.",
   "interface": {
     "displayName": "AI-iPhone-use",

@@ -5,13 +5,15 @@ Use this Windows package for visual observations, named tabs, and batches of act
 
 1. **Install Pinky.** Open the [official Pinky release](https://github.com/DIYgod/pinky/releases/latest) and select the Windows installer under **Assets** (the x64 filename includes `amd64.exe`). Windows also needs [Apple Devices](https://apps.microsoft.com/detail/9np83lwlpz9k) or an upstream-supported iTunes installation for USB device discovery.
 2. **Pair the phone.** Connect it by USB, unlock it, trust the PC, and select **Add phone → iPhone** in Pinky. On iOS 17.4–26, upstream documents a one-time Mac and Xcode installation for full touch control. For iOS 27 and later, check its helper-free setup and the requirements for your device. [Pinky pairing instructions](https://github.com/DIYgod/pinky#get-started)
-3. **Connect to Codex.** [Download the Pinky package](https://github.com/owen201913-cmd/AI-iPhone-use/raw/refs/heads/main/downloads/iphone-use-pinky.zip) and extract it to a permanent folder. Install [Codex CLI](https://developers.openai.com/codex/cli/) and [Node.js 22.16 or later](https://nodejs.org/en/download). Open PowerShell in the folder containing `install.ps1`. Replace the sample executable path with the actual location:
+3. **Connect to Codex.** [Download the Pinky package](https://github.com/owen201913-cmd/AI-iPhone-use/releases/latest/download/iphone-use-pinky.zip) and extract it to a permanent folder. Install [Codex CLI](https://developers.openai.com/codex/cli/) and [Node.js 22.16 or later](https://nodejs.org/en/download). Install [PowerShell 7](https://learn.microsoft.com/powershell/scripting/install/installing-powershell-on-windows) and open a terminal in the folder containing `install.ps1`. Replace the sample executable path with the actual location:
 
    ```powershell
-   .\install.ps1
+   pwsh -File .\install.ps1
    node scripts/setup.mjs enable
    node scripts/setup.mjs pinky "C:\Path\To\Pinky.exe"
    ```
+
+   If Windows blocks the script, open the downloaded ZIP’s **Properties** in File Explorer, select **Unblock** if shown for this trusted download, and extract it again. For an organization-managed policy, use its approved installation process.
 
 4. **Verify the connection.** In a new Codex chat, ask, “Use Pinky to list the tools provided by this version.” Then ask it to observe your phone and respond to Pinky’s authorization prompt. After updating Pinky, rerun the final setup command to register the new executable.
 

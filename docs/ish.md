@@ -6,11 +6,11 @@ The package exposes `iphone_workspace` and `iphone_receipt`. The App Store versi
 ## Pair iSH Shell
 
 1. **On iPhone**, install and open [iSH Shell by Theodore Dubois](https://apps.apple.com/app/ish-shell/id1436902243). [iSH project](https://ish.app/)
-2. **On Windows**, [download the iSH package](https://github.com/owen201913-cmd/AI-iPhone-use/raw/refs/heads/main/downloads/iphone-use-ish.zip) and extract it. For Codex, install [Codex CLI](https://developers.openai.com/codex/cli/), [Node.js 22.16 or later](https://nodejs.org/en/download), [Python with the Windows py launcher](https://www.python.org/downloads/windows/), and [Apple Devices](https://apps.microsoft.com/detail/9np83lwlpz9k). Connect one unlocked iPhone over USB and trust the PC.
-3. **Install and pair.** Open PowerShell in the folder containing `install.ps1`:
+2. **On Windows**, [download the iSH package](https://github.com/owen201913-cmd/AI-iPhone-use/releases/latest/download/iphone-use-ish.zip) and extract it. For Codex, install [Codex CLI](https://developers.openai.com/codex/cli/), [Node.js 22.16 or later](https://nodejs.org/en/download), [Python with the Windows py launcher](https://www.python.org/downloads/windows/), and [Apple Devices](https://apps.microsoft.com/detail/9np83lwlpz9k). Connect one unlocked iPhone over USB and trust the PC.
+3. **Install and pair.** Install [PowerShell 7](https://learn.microsoft.com/powershell/scripting/install/installing-powershell-on-windows) and open a terminal in the folder containing `install.ps1`:
 
    ```powershell
-   .\install.ps1
+   pwsh -File .\install.ps1
    node scripts/setup.mjs enable
    node scripts/setup.mjs ish-script
    ```
@@ -21,7 +21,11 @@ The package exposes `iphone_workspace` and `iphone_receipt`. The App Store versi
    node scripts/pair-ish-usb.mjs "SHA256:<fingerprint shown on your phone>"
    ```
 
+   If Windows blocks the script, open the downloaded ZIP’s **Properties** in File Explorer, select **Unblock** if shown for this trusted download, and extract it again. For an organization-managed policy, use its approved installation process.
+
 4. **Verify.** Keep iSH in the foreground. In a new AI chat, ask, “Run `pwd` and `printf 'OK\n'` in standard iSH. Show the output and exit code.” Expect `/home/ishwork/workspace`, `OK`, and exit code 0. If that iSH instance already belongs to a different installation, keep its pairing and use a separate app instance for a new pairing.
+
+If the standard iSH SSH port is unavailable after reopening the app, keep it in the foreground and rerun the command printed by `node scripts/setup.mjs ish-script` in that iSH root shell. [Troubleshooting](guide.md#troubleshooting)
 
 ## Optional background jobs
 

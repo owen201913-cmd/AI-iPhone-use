@@ -31,7 +31,7 @@ Use `status` to inspect the bridge, or `tools` to connect and discover which ope
 
 - **Named tabs.** `ensure_tab` checks whether a tab is selected and taps only when needed. `navigate_tabs` takes up to ten known tabs within the same app and verifies each selection.
 - **Upstream calls.** Use `call` with the names and parameters returned by `tools`. Depending on the version, these include `phone_connect`, `phone_apps`, `phone_launch`, `phone_observe`, `phone_tap`, `phone_type`, `phone_key`, `phone_swipe`, `phone_pinch`, `phone_drag`, `phone_wait_for`, `phone_batch`, `phone_request_approval`, `phone_handoff`, and `phone_release`.
-- **Results and handoff.** Set `includeImage: false` when status alone is sufficient. Use `trace` to inspect local latency and `receipt` to check the original request. You can pause or take over in Pinky. When finished, use `phone_release` to release the device and `close` to close the bridge.
+- **Results and handoff.** On a new operation, `includeImage: false` leaves images out of the immediate reply and stores the full result, including images, in that installation’s local `pinky/receipts` directory. To retrieve it after a restart, use `receipt` with the original request ID and omit `includeImage`. With the default setting, raw results are available for up to 32 recent requests in the running server. Status and metadata remain on disk. Receipts created by earlier versions contain only status and metadata on disk. Use `trace` to inspect local latency and `receipt` to check the original request. You can pause or take over in Pinky. When finished, use `phone_release` to release the device and `close` to close the bridge.
 
 ## iSH workspace and background jobs
 

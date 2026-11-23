@@ -42,3 +42,41 @@ test('Pinky reuses one connection, persists receipts and never replays uncertain
  await c.close();assert.equal(closed,2);
 });
 
+test('Pinky can retrieve a deferred text and image reply after restart without dispatching again', async t => {
+ const dir = await mkdtemp(join(tmpdir(), 'pinky-deferred-'));
+ t.after(() => rm(dir, {recursive:true, force:true}));
+ const {registerPhoneTool} = await import('../lib/mcp-phone.mjs');
+ const {TOOL_RESULT_CONTENT} = await import('../lib/tool-performance.mjs');
+ const content = [{type:'text', text:'available'}, {type:'image', mimeType:'image/png', data:'AQID'}];
+ let calls = 0;
+ const dependencies = {
+  receiptDirectory:dir, permissions:{require:async () => {}},
+  connect:async () => ({client:{
+   listTools:async () => ({tools:[{name:'phone_apps'}]}),
+   callTool:async () => { calls++; return {content}; },
+   close:async () => {},
+  }}),
+ };
+ function start() {
+  const bridge = createPinkyBridge(dependencies);
+  let invoke;
+  registerPhoneTool((_name, _description, _schema, handler) => { invoke = handler; }, bridge, dependencies.permissions);
+  return {bridge, invoke};
+ }
+ const first = start();
+ const deferred = {action:'call', tool:'phone_apps', requestId:randomUUID(), includeImage:false};
+ const normal = {...deferred, requestId:randomUUID(), includeImage:true};
+ assert.deepEqual((await first.invoke(deferred))[TOOL_RESULT_CONTENT], [content[0]]);
+ assert.deepEqual((await first.invoke(normal))[TOOL_RESULT_CONTENT], content);
+ await first.bridge.close();
+
+ const second = start();
+ t.after(() => second.bridge.close());
+ const lookup = {action:'receipt', requestId:deferred.requestId};
+ assert.deepEqual((await second.invoke({...lookup, includeImage:false}))[TOOL_RESULT_CONTENT], [content[0]]);
+ assert.deepEqual((await second.invoke(lookup))[TOOL_RESULT_CONTENT], content);
+ assert.equal((await second.invoke({action:'receipt', requestId:normal.requestId}))[TOOL_RESULT_CONTENT], undefined);
+ assert.deepEqual((await second.invoke(deferred))[TOOL_RESULT_CONTENT], [content[0]]);
+ assert.equal(calls, 2);
+});
+

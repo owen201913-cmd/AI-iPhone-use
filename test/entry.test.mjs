@@ -5,9 +5,45 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { AjvJsonSchemaValidator } from '@modelcontextprotocol/sdk/validation/ajv';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 
 const groups = {pinky:['pinky'], ish:['iphone_receipt','iphone_workspace'], usb:['iphone_screen','iphone_usb']};
+test('workspace action requirements agree in tools/list and tools/call', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'iphone-workspace-schema-'));
+  const client = new Client({name:'schema-test',version:'1'});
+  try {
+    await writeFile(join(dir,'features.json'), '["ish"]');
+    await writeFile(join(dir,'access.json'), '{"enabled":true}');
+    await client.connect(new StdioClientTransport({command:process.execPath,
+      args:[fileURLToPath(new URL('../server.mjs',import.meta.url))], env:{IPHONE_USE_HOME:dir}}));
+    const tool = (await client.listTools()).tools.find(tool => tool.name === 'iphone_workspace');
+    const validate = new AjvJsonSchemaValidator().getValidator(tool.inputSchema);
+    const call = args => client.callTool({name:tool.name, arguments:args});
+    const requestId = 'f3f50e61-7a59-4c7b-82b6-02632c7ac19c';
+    const examples = [
+      {action:'status'}, {action:'run', requestId, script:'pwd'},
+      {action:'background', requestId, title:'Check directory', steps:['pwd']},
+      {action:'receipt', requestId}, {action:'cancel_wait', requestId},
+    ];
+    for (const args of examples) {
+      assert.equal(validate(args).valid, true);
+      assert.ok(!(await call(args)).isError);
+      for (const field of Object.keys(args).filter(key => key !== 'action')) {
+        const missing = {...args};
+        delete missing[field];
+        assert.equal(validate(missing).valid, false, args.action + ' requires ' + field);
+        const invalid = await call(missing);
+        assert.equal(invalid.isError, true);
+        assert.match(invalid.content[0].text, new RegExp(field + ' is required'));
+      }
+    }
+  } finally {
+    await client.close();
+    await rm(dir,{recursive:true,force:true});
+  }
+});
+
 for (const names of [['pinky'], ['ish'], ['usb'], ['pinky','ish']]) {
   test('Codex advertises only the selected tools: ' + names.join(', '), async () => {
     const dir = await mkdtemp(join(tmpdir(), 'iphone-features-'));

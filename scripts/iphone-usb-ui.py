@@ -4,7 +4,6 @@ import base64
 import hashlib
 import io
 import json
-import os
 import sys
 from contextlib import asynccontextmanager, suppress
 from pathlib import Path
@@ -19,7 +18,6 @@ from pymobiledevice3.remote.core_device.screen_stream import open_media_receiver
 from pymobiledevice3.remote.userspace_tunnel import UserspaceRsdTunnel
 from pymobiledevice3.usbmux import list_devices
 
-ROOT = Path(os.environ.get('IPHONE_USE_HOME') or Path(os.environ['LOCALAPPDATA']) / 'IphoneUseCodex') / 'iphone-usb-ui'
 KEYS = {name: getattr(hid, 'KEY_' + key) for name, key in
         [('enter','ENTER'),('backspace','BACKSPACE'),('escape','ESC'),('tab','TAB'),
          ('left','LEFT'),('right','RIGHT'),('up','UP'),('down','DOWN')]}
@@ -150,12 +148,12 @@ async def result_frame(screens, status, stage):
                 break
     return {'status':status,'image':encode(im),'native':native,'screenSettled':settled,**stage}
 
-async def main(r):
+async def main(r, config_file):
     stage = {'inputMayHaveRun':False}
     def mark():
         stage['inputMayHaveRun'] = True
     try:
-        config=json.loads((ROOT/'config.json').read_text(encoding='utf-8-sig'))
+        config=json.loads(config_file.read_text(encoding='utf-8-sig'))
         if config['enabled'] is not True:
             return {'status':'usb_control_disabled',**stage}
         devices=[d for d in await list_devices() if d.is_usb and
@@ -208,4 +206,4 @@ async def main(r):
         return {'status':'uncertain' if stage['inputMayHaveRun'] else 'unavailable','reason':reason,**stage}
 
 if __name__=='__main__':
-    print(json.dumps(asyncio.run(main(json.load(sys.stdin))),separators=(',',':')))
+    print(json.dumps(asyncio.run(main(json.load(sys.stdin), Path(sys.argv[1]))),separators=(',',':')))

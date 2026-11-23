@@ -73,6 +73,22 @@ test('complete current or connect frame avoids redundant launch and observe',asy
   assert.equal(named.goal.taskVerified,true);
 });
 
+test('a settle timeout triggers a readback and never repeats a tap or launch', async () => {
+  const timeout = reply(clock().content[0].text.replace('settled', 'settled · phone · settle: timeout'));
+  const confirmed = await runGoal([clock(false), timeout, clock()]);
+  assert.deepEqual(confirmed.calls.map(call => call.name), ['phone_observe','phone_tap','phone_observe']);
+  assert.equal(confirmed.goal.taskVerified, true);
+  const changed = await runGoal([clock(false), timeout, clock(false)]);
+  assert.equal(changed.goal.taskVerified, false);
+  assert.equal(changed.goal.taps, 1);
+  const unstable = await runGoal([timeout, timeout]);
+  assert.equal(unstable.goal.taskVerified, false);
+  assert.equal(unstable.goal.taps, 0);
+  const launched = await runGoal([home, timeout, clock()]);
+  assert.deepEqual(launched.calls.map(call => call.name), ['phone_observe','phone_launch','phone_observe']);
+  assert.equal(launched.goal.taskVerified, true);
+});
+
 test('only a confirmed missing lease can connect; an incomplete launch is observed only once',async()=>{
   for(const initial of [
     reply('error: invalid_argument\nChoose a device first.',true),

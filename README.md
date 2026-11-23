@@ -6,6 +6,8 @@ Windows 上的 Codex 本機外掛。Codex 用 stdio 啟動手機工具，USB 後
 
 ## Windows 快速開始
 
+在 PowerShell 執行 `node -v`、`npm.cmd -v`、`codex plugin --help`、`py -3 --version`，可先確認本機指令是否可用。需要安裝時可從官方取得 [Node.js](https://nodejs.org/en/download)、[Codex CLI](https://developers.openai.com/codex/cli/)、[Python for Windows](https://www.python.org/downloads/windows/) 和 [Apple Devices](https://apps.microsoft.com/detail/9np83lwlpz9k)。
+
 準備 Windows、有 `codex plugin` 子命令的 Codex CLI、Node.js 22.16 以上與 npm。USB 功能還需要 Apple Mobile Device USB 服務、Python 與 `py.exe`。已測 Python 3.14。可以用 Git 下載到長期保留的位置：
 
 ```powershell
@@ -27,6 +29,8 @@ npm run setup -- enable
 1. 用 USB 接上一支已解鎖的 iPhone，在手機上信任自己的電腦。依裝置要求啟用開發者模式與相關權限。
 2. 在專案執行 `npm run setup -- usb`，把目前唯一連接的 USB 裝置登錄到這份外掛。
 3. 在 Codex 說「用 Iphone use (Standalone) 看我的手機畫面」。觀察會回傳 PNG 和 observationId。後續點擊用同一畫面的座標。中文貼上會取代手機剪貼簿。
+
+USB 畫面後端使用 iOS 17.4 起提供的 CoreDeviceProxy。手機還須提供個別動作使用的擷取、鏡像或輸入服務，支援情況以真機結果為準。只要前景操作，可以先略過下方兩種選用後端。
 
 | 工具 | 功能 |
 | --- | --- |
@@ -50,7 +54,7 @@ npm run setup -- pinky "C:\Path\To\Pinky.exe"
 
 ## 選用 iSH 工作區
 
-**一般終端。** 在手機上開啟 iSH。以 `node scripts/setup.mjs ish-script` 產生使用本機公鑰的完整設定，將輸出貼到該 iSH 的 root 終端機。它會安裝 OpenSSH、建立專用帳號、在手機 loopback 的 22482 連接埠啟動服務，並顯示公開主機指紋。核對手機螢幕後在電腦上執行：
+**一般終端。** 在手機從 [App Store 安裝 iSH Shell](https://apps.apple.com/app/ish-shell/id1436902243) 並開啟。以 `node scripts/setup.mjs ish-script` 產生使用本機公鑰的完整設定，將輸出貼到該 iSH 的 root 終端機。它會安裝 OpenSSH、建立專用帳號、在手機 loopback 的 22482 連接埠啟動服務，並顯示公開主機指紋。核對手機螢幕後在電腦上執行：
 
 ```powershell
 node scripts/pair-ish-usb.mjs "SHA256:<手機顯示的指紋>"

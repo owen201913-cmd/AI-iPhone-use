@@ -1,0 +1,15 @@
+node_modules/
+.env
+*.log
+__pycache__/
+*.pyc
+.venv/
+*.ipa
+*.p12
+*.mobileprovision
+*.sqlite*
+identity*
+*.pem
+*.key
+runtime/
+state/

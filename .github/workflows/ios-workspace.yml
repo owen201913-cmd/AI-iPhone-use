@@ -1,0 +1,49 @@
+name: Build iSH Workspace
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: iphone-workspace-build
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 28
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: ish-app/ish
+          ref: ce96e698f1820b9d8db47e87c501ecb89119d7ce
+          path: ish
+          persist-credentials: false
+      - name: Prepare pinned sources and tools
+        working-directory: ish
+        run: |
+          set -euo pipefail
+          git apply --check ../ios/workspace.patch
+          git apply ../ios/workspace.patch
+          git submodule update --init --depth 1 deps/libapps deps/libarchive
+          brew install llvm lld ninja libarchive meson
+      - name: Compile unsigned arm64 app
+        working-directory: ish
+        run: |
+          set -euo pipefail
+          xcodebuild -version
+          xcodebuild -project iSH.xcodeproj -scheme iSH -configuration Release -arch arm64 -sdk iphoneos -derivedDataPath "$RUNNER_TEMP/build" CODE_SIGNING_ALLOWED=NO build > "$RUNNER_TEMP/xcode.log" 2>&1 || { grep -n -E -C 3 'error:|FAILED:|Command .* failed|fatal:' "$RUNNER_TEMP/xcode.log" | tail -160; tail -30 "$RUNNER_TEMP/xcode.log"; exit 1; }
+          mkdir -p "$RUNNER_TEMP/package/Payload/iSH.app"
+          app="$RUNNER_TEMP/build/Build/Products/Release-iphoneos/iSH.app"
+          test -s "$app/iSH"
+          test -s "$app/root.tar.gz"
+          rsync -a --exclude='PlugIns/' "$app/" "$RUNNER_TEMP/package/Payload/iSH.app/"
+          cd "$RUNNER_TEMP/package"
+          /usr/libexec/PlistBuddy -c "Print BGTaskSchedulerPermittedIdentifiers:0" Payload/iSH.app/Info.plist | grep -F '.workspace.*'
+          /usr/bin/zip -qry "$GITHUB_WORKSPACE/iSH-Workspace.ipa" Payload
+      - uses: actions/upload-artifact@v4
+        with:
+          name: iSH-Workspace-unsigned
+          path: iSH-Workspace.ipa
+          retention-days: 1

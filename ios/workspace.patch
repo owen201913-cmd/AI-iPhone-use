@@ -1,0 +1,344 @@
+diff --git a/app/App.xcconfig b/app/App.xcconfig
+index 401b1af..feff158 100644
+--- a/app/App.xcconfig
++++ b/app/App.xcconfig
+@@ -10,4 +10,4 @@ CODE_SIGN_ENTITLEMENTS = app/iSH.entitlements
+ 
+ HEADER_SEARCH_PATHS = $(inherited) $(SRCROOT) $(SRCROOT)/deps/libarchive/libarchive
+ // AccessibilityFixes.m contains a static constructor that we don't want removed
+-OTHER_LDFLAGS = -ObjC $(LINUX_APP_LDFLAGS) -u _accessibilityfixes_init
++OTHER_LDFLAGS = -ObjC $(LINUX_APP_LDFLAGS) -u _accessibilityfixes_init -weak_framework BackgroundTasks
+diff --git a/app/AppDelegate.m b/app/AppDelegate.m
+index 2508b18..7ce5f0f 100644
+--- a/app/AppDelegate.m
++++ b/app/AppDelegate.m
+@@ -17,6 +17,10 @@
+ #import "iOSFS.h"
+ #import "SceneDelegate.h"
+ #import "PasteboardDevice.h"
++#if !ISH_LINUX
++extern struct dev_ops workspace_batch_dev;
++extern void RegisterWorkspaceBackgroundTask(void);
++#endif
+ #import "LocationDevice.h"
+ #import "NSObject+SaneKVO.h"
+ #import "Roots.h"
+@@ -100,6 +104,9 @@ static NSString *const kSkipStartupMessage = @"Skip Startup Message";
+         return err;
+     }
+     generic_mknodat(AT_PWD, "/dev/clipboard", S_IFCHR|0666, dev_make(DYN_DEV_MAJOR, DEV_CLIPBOARD_MINOR));
++    err = dyn_dev_register(&workspace_batch_dev, DEV_CHAR, DYN_DEV_MAJOR, 2);
++    if (err != 0) return err;
++    generic_mknodat(AT_PWD, "/dev/workspace-batch", S_IFCHR|0666, dev_make(DYN_DEV_MAJOR, 2));
+     
+     err = dyn_dev_register(&location_dev, DEV_CHAR, DYN_DEV_MAJOR, DEV_LOCATION_MINOR);
+     if (err != 0)
+@@ -250,6 +257,9 @@ void NetworkReachabilityCallback(SCNetworkReachabilityRef target, SCNetworkReach
+ }
+ 
+ - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
++#if !ISH_LINUX
++    RegisterWorkspaceBackgroundTask();
++#endif
+     // get the network permissions popup to appear on chinese devices
+     [[NSURLSession.sharedSession dataTaskWithURL:[NSURL URLWithString:@"http://captive.apple.com"]] resume];
+ 
+diff --git a/app/AppGroup.h b/app/AppGroup.h
+index 31a97c7..a1c5ce5 100644
+--- a/app/AppGroup.h
++++ b/app/AppGroup.h
+@@ -8,3 +8,4 @@
+ #import <Foundation/Foundation.h>
+ 
+ NSURL *ContainerURL(void);
++NSArray<NSString *> *CurrentAppGroups(void);
+diff --git a/app/AppGroup.m b/app/AppGroup.m
+index 53541f4..c8db1e5 100644
+--- a/app/AppGroup.m
++++ b/app/AppGroup.m
+@@ -102,6 +102,8 @@ NSArray<NSString *> *CurrentAppGroups(void) {
+ }
+ 
+ NSURL *ContainerURL(void) {
+-    NSString *appGroup = CurrentAppGroups()[0];
+-    return [NSFileManager.defaultManager containerURLForSecurityApplicationGroupIdentifier:appGroup];
++    NSString *appGroup = CurrentAppGroups().firstObject;
++    NSURL *shared = appGroup ? [NSFileManager.defaultManager containerURLForSecurityApplicationGroupIdentifier:appGroup] : nil;
++    return shared ?: [NSFileManager.defaultManager URLForDirectory:NSApplicationSupportDirectory
++            inDomain:NSUserDomainMask appropriateForURL:nil create:YES error:nil];
+ }
+diff --git a/app/Info.plist b/app/Info.plist
+index a4f151c..4ae5dee 100644
+--- a/app/Info.plist
++++ b/app/Info.plist
+@@ -12,6 +12,12 @@
+ 	<string>6.0</string>
+ 	<key>CFBundleName</key>
+ 	<string>$(PRODUCT_NAME)</string>
++	<key>CFBundleDisplayName</key>
++	<string>iSH Workspace</string>
++	<key>BGTaskSchedulerPermittedIdentifiers</key>
++	<array>
++		<string>$(PRODUCT_BUNDLE_IDENTIFIER).workspace.*</string>
++	</array>
+ 	<key>CFBundlePackageType</key>
+ 	<string>APPL</string>
+ 	<key>CFBundleShortVersionString</key>
+@@ -56,6 +62,7 @@
+ 	<key>UIBackgroundModes</key>
+ 	<array>
+ 		<string>location</string>
++		<string>processing</string>
+ 	</array>
+ 	<key>UIFileSharingEnabled</key>
+ 	<true/>
+diff --git a/app/Roots.m b/app/Roots.m
+index bb77b40..74801e5 100644
+--- a/app/Roots.m
++++ b/app/Roots.m
+@@ -78,6 +78,7 @@ static NSString *kDefaultRoot = @"Default Root";
+ }
+ 
+ - (void)syncFileProviderDomains {
++    if (!CurrentAppGroups().count) return;
+     if (self.updatingDomains) {
+         self.domainsNeedUpdate = YES;
+         return;
+diff --git a/app/WorkspaceBatch.m b/app/WorkspaceBatch.m
+new file mode 100644
+index 0000000..3f43f91
+--- /dev/null
++++ b/app/WorkspaceBatch.m
+@@ -0,0 +1,160 @@
++#if !ISH_LINUX
++#import <UIKit/UIKit.h>
++#import <BackgroundTasks/BackgroundTasks.h>
++#import "SceneDelegate.h"
++#include "fs/dev.h"
++#include "kernel/task.h"
++#include "kernel/errno.h"
++
++// The guest script and the system task belong to the same app. All scheduler
++// state lives on the main queue. Guest threads only wait for the initial grant.
++API_AVAILABLE(ios(26.0))
++@interface WorkspaceBatch : NSObject
++@property(nonatomic) pid_t_ pid;
++@property(nonatomic) uint64_t instance;
++@property(nonatomic) NSInteger steps;
++@property(nonatomic,strong) dispatch_semaphore_t granted;
++@property(nonatomic,strong) UIAlertController *prompt;
++@property(nonatomic,strong) BGContinuedProcessingTask *task;
++@property(atomic) BOOL began;
++@end
++@implementation WorkspaceBatch
++@end
++
++static WorkspaceBatch *active API_AVAILABLE(ios(26.0));
++static BOOL registered;
++static NSString *identifier(void) {
++    return [NSBundle.mainBundle.bundleIdentifier stringByAppendingString:@".workspace.batch"];
++}
++
++// Validate the original session leader under the same lock as signal delivery.
++// A recycled pid must never result in another command receiving a signal.
++static void stopWorkers(pid_t_ pid, uint64_t instance) {
++    lock(&pids_lock);
++    struct task *leader = pid_get_task(pid);
++    if (leader && leader->instance_id == instance && leader->group->sid == pid &&
++            leader->group->pgid == pid) {
++        struct tgroup *group;
++        struct pid *entry = pid_get(pid);
++        list_for_each_entry(&entry->pgroup, group, pgroup)
++            send_signal(group->leader, SIGKILL_, SIGINFO_NIL);
++    }
++    unlock(&pids_lock);
++}
++
++static void finish(WorkspaceBatch *batch, BOOL success, BOOL terminate) API_AVAILABLE(ios(26.0)) {
++    if (active != batch) return;
++    active = nil;
++    if (batch.prompt.presentingViewController) [batch.prompt dismissViewControllerAnimated:YES completion:nil];
++    batch.prompt = nil;
++    if (terminate && batch.began) stopWorkers(batch.pid, batch.instance);
++    if (batch.task) {
++        batch.task.expirationHandler = nil;
++        [batch.task setTaskCompletedWithSuccess:success];
++        batch.task = nil;
++    } else {
++        [BGTaskScheduler.sharedScheduler cancelTaskRequestWithIdentifier:identifier()];
++    }
++    dispatch_semaphore_signal(batch.granted);
++}
++
++void RegisterWorkspaceBackgroundTask(void) {
++    if (@available(iOS 26.0, *)) {
++        registered = [BGTaskScheduler.sharedScheduler registerForTaskWithIdentifier:identifier()
++            usingQueue:dispatch_get_main_queue() launchHandler:^(BGTask *delivered) {
++            WorkspaceBatch *batch = active;
++            if (!batch || batch.task || ![delivered isKindOfClass:BGContinuedProcessingTask.class]) {
++                [delivered setTaskCompletedWithSuccess:NO];
++                return;
++            }
++            batch.task = (BGContinuedProcessingTask *)delivered;
++            batch.task.progress.totalUnitCount = batch.steps;
++            batch.task.progress.completedUnitCount = 0;
++            delivered.expirationHandler = ^{
++                dispatch_async(dispatch_get_main_queue(), ^{ finish(batch, NO, YES); });
++            };
++            batch.began = YES;
++            dispatch_semaphore_signal(batch.granted);
++            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 660 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
++                finish(batch, NO, YES);
++            });
++        }];
++    }
++}
++
++static void askToStart(WorkspaceBatch *batch, NSString *label) API_AVAILABLE(ios(26.0)) {
++    UIViewController *presenter = currentTerminalViewController;
++    if (!registered || active || !presenter.viewIfLoaded.window || presenter.presentedViewController ||
++            presenter.view.window.windowScene.activationState != UISceneActivationStateForegroundActive) {
++        dispatch_semaphore_signal(batch.granted);
++        return;
++    }
++    active = batch;
++    NSString *detail = [NSString stringWithFormat:@"%@ · %ld 個步驟", label, (long)batch.steps];
++    batch.prompt = [UIAlertController alertControllerWithTitle:@"開始 iSH 工作？" message:detail
++                                                preferredStyle:UIAlertControllerStyleAlert];
++    [batch.prompt addAction:[UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel
++                                                  handler:^(UIAlertAction *a) { finish(batch, NO, NO); }]];
++    [batch.prompt addAction:[UIAlertAction actionWithTitle:@"開始" style:UIAlertActionStyleDefault
++                                                  handler:^(UIAlertAction *a) {
++        if (active != batch) return;
++        BGContinuedProcessingTaskRequest *request = [[BGContinuedProcessingTaskRequest alloc]
++                initWithIdentifier:identifier() title:@"iSH Workspace" subtitle:detail];
++        request.strategy = BGContinuedProcessingTaskRequestSubmissionStrategyFail;
++        if (![BGTaskScheduler.sharedScheduler submitTaskRequest:request error:nil]) finish(batch, NO, NO);
++    }]];
++    [presenter presentViewController:batch.prompt animated:YES completion:nil];
++    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 50 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
++        if (active == batch && !batch.began) finish(batch, NO, NO);
++    });
++}
++
++static ssize_t batchWrite(struct fd *fd, const void *buf, size_t length) {
++    if (!length || length > 240 || !current || NSThread.isMainThread) return _EINVAL;
++    if (@available(iOS 26.0, *)) {
++        @autoreleasepool {
++            NSString *line = [[[NSString alloc] initWithBytes:buf length:length encoding:NSUTF8StringEncoding]
++                    stringByTrimmingCharactersInSet:NSCharacterSet.newlineCharacterSet];
++            if (!line.length) return _EINVAL;
++            pid_t_ pid = current->pid;
++            uint64_t instance = current->instance_id;
++            if ([line hasPrefix:@"begin "]) {
++                NSArray *parts = [line componentsSeparatedByString:@" "];
++                if (parts.count < 3) return _EINVAL;
++                NSInteger steps = [parts[1] integerValue];
++                if (steps < 1 || steps > 10) return _EINVAL;
++                lock(&pids_lock);
++                BOOL isolated = current->group->sid == pid && current->group->pgid == pid;
++                unlock(&pids_lock);
++                if (!isolated) return _EPERM;
++                WorkspaceBatch *batch = [WorkspaceBatch new];
++                batch.pid = pid;
++                batch.instance = instance;
++                batch.steps = steps;
++                batch.granted = dispatch_semaphore_create(0);
++                NSString *label = [[parts subarrayWithRange:NSMakeRange(2, parts.count - 2)] componentsJoinedByString:@" "];
++                dispatch_async(dispatch_get_main_queue(), ^{ askToStart(batch, label); });
++                dispatch_semaphore_wait(batch.granted, DISPATCH_TIME_FOREVER);
++                return batch.began ? (ssize_t)length : _EACCES;
++            }
++            __block ssize_t result = _EINVAL;
++            dispatch_sync(dispatch_get_main_queue(), ^{
++                WorkspaceBatch *batch = active;
++                if (!batch || !batch.began || batch.instance != instance) return;
++                if ([line isEqualToString:@"step"] && batch.task.progress.completedUnitCount < batch.steps)
++                    batch.task.progress.completedUnitCount++;
++                else if ([line isEqualToString:@"done"] && batch.task.progress.completedUnitCount == batch.steps)
++                    finish(batch, YES, NO);
++                else if ([line isEqualToString:@"failed"])
++                    finish(batch, NO, NO);
++                else return;
++                result = (ssize_t)length;
++            });
++            return result;
++        }
++    }
++    return _ENOSYS;
++}
++
++struct dev_ops workspace_batch_dev = { .fd.write = batchWrite };
++#endif
+diff --git a/app/iSH.xcconfig b/app/iSH.xcconfig
+index 7c3538f..58c1d76 100644
+--- a/app/iSH.xcconfig
++++ b/app/iSH.xcconfig
+@@ -1,5 +1,5 @@
+ // Change this to change all the bundle IDs and app groups
+-ROOT_BUNDLE_IDENTIFIER = app.ish.iSH
++ROOT_BUNDLE_IDENTIFIER = org.iphoneuse.workspace
+ // It's easiest to specify your development team ID in the project build settings, but you can alternatively put it here to reduce merge conflicts
+ DEVELOPMENT_TEAM =
+ 
+diff --git a/iSH.xcodeproj/project.pbxproj b/iSH.xcodeproj/project.pbxproj
+index 6db7c39..53447e1 100644
+--- a/iSH.xcodeproj/project.pbxproj
++++ b/iSH.xcodeproj/project.pbxproj
+@@ -204,6 +204,7 @@
+ 		BBECF3AE2691330F00DEC937 /* libiSHLinux.a in Frameworks */ = {isa = PBXBuildFile; fileRef = BBECF3A22691314C00DEC937 /* libiSHLinux.a */; };
+ 		BBECF3B9269136FB00DEC937 /* liblinux.a in Frameworks */ = {isa = PBXBuildFile; fileRef = BBECF3B8269136E100DEC937 /* liblinux.a */; };
+ 		BBECF3BC26913F1600DEC937 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = BB792B541F96D90D00FFB7A4 /* AppDelegate.m */; };
++		FF3912017100000100000001 /* WorkspaceBatch.m in Sources */ = {isa = PBXBuildFile; fileRef = FF3912017100000100000002 /* WorkspaceBatch.m */; };
+ 		BBEEA9E8277D25090069495B /* LinuxRoot.c in Sources */ = {isa = PBXBuildFile; fileRef = BBEEA9E7277D25090069495B /* LinuxRoot.c */; };
+ 		BBEEA9EA277DAB400069495B /* LinuxPTY.c in Sources */ = {isa = PBXBuildFile; fileRef = BBEEA9E9277DAB400069495B /* LinuxPTY.c */; };
+ 		BBEF1970268066D1001225BD /* libiSHApp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = BBEF191E26806364001225BD /* libiSHApp.a */; };
+@@ -676,6 +677,7 @@
+ 		BB792B501F96D90D00FFB7A4 /* iSH.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = iSH.app; sourceTree = BUILT_PRODUCTS_DIR; };
+ 		BB792B531F96D90D00FFB7A4 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
+ 		BB792B541F96D90D00FFB7A4 /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
++		FF3912017100000100000002 /* WorkspaceBatch.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = WorkspaceBatch.m; sourceTree = "<group>"; };
+ 		BB792B561F96D90D00FFB7A4 /* TerminalViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TerminalViewController.h; sourceTree = "<group>"; };
+ 		BB792B571F96D90D00FFB7A4 /* TerminalViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = TerminalViewController.m; sourceTree = "<group>"; };
+ 		BB792B5A1F96D90D00FFB7A4 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Terminal.storyboard; sourceTree = "<group>"; };
+@@ -1049,6 +1051,7 @@
+ 			children = (
+ 				BB792B531F96D90D00FFB7A4 /* AppDelegate.h */,
+ 				BB792B541F96D90D00FFB7A4 /* AppDelegate.m */,
++				FF3912017100000100000002 /* WorkspaceBatch.m */,
+ 				BB565EA52734F22D00C93EAE /* CurrentRoot.h */,
+ 				BB565EA32734F1FB00C93EAE /* CurrentRoot.m */,
+ 				BBCC9D942365430800424C83 /* SceneDelegate.h */,
+@@ -2208,6 +2211,7 @@
+ 				BB28C7A326896B1F00BDC834 /* BarButton.m in Sources */,
+ 				BB28C7A426896B1F00BDC834 /* AppGroup.m in Sources */,
+ 				BBECF3BC26913F1600DEC937 /* AppDelegate.m in Sources */,
++				FF3912017100000100000001 /* WorkspaceBatch.m in Sources */,
+ 				BB28C7A526896B1F00BDC834 /* UIApplication+OpenURL.m in Sources */,
+ 				49FF844B2A06249F00850B7A /* ExceptionExfiltrator.m in Sources */,
+ 				497A08C12963401100B323CF /* AccessibilityFixes.m in Sources */,
+diff --git a/kernel/task.c b/kernel/task.c
+index 0f350d4..f5e9a6c 100644
+--- a/kernel/task.c
++++ b/kernel/task.c
+@@ -59,6 +59,8 @@ struct task *task_create_(struct task *parent) {
+     if (parent != NULL)
+         *task = *parent;
+     task->pid = pid->id;
++    static uint64_t last_instance;
++    task->instance_id = ++last_instance; // protected by pids_lock
+     pid->task = task;
+ 
+     list_init(&task->children);
+diff --git a/kernel/task.h b/kernel/task.h
+index 6f25a4c..953d16f 100644
+--- a/kernel/task.h
++++ b/kernel/task.h
+@@ -24,6 +24,7 @@ struct task {
+     struct tgroup *group; // immutable
+     struct list group_links;
+     pid_t_ pid, tgid; // immutable
++    uint64_t instance_id; // immutable across exec, unique even after PID reuse
+     uid_t_ uid, gid;
+     uid_t_ euid, egid;
+     uid_t_ suid, sgid;

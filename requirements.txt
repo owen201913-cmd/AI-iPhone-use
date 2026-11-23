@@ -1,0 +1,2 @@
+pymobiledevice3==11.61.1
+Pillow==13.0.0

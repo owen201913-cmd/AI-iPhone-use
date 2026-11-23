@@ -1,0 +1,20 @@
+{
+  "name": "iphone-use-codex",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "license": "GPL-3.0-only",
+  "engines": {
+    "node": ">=22.16.0"
+  },
+  "scripts": {
+    "test": "node --test",
+    "start": "node server.mjs",
+    "setup": "node scripts/setup.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.30.0",
+    "ssh2": "1.17.0",
+    "zod": "4.6.5"
+  }
+}

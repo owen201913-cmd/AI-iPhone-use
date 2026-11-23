@@ -1,21 +1,21 @@
-# Iphone use · Codex
+# AI iPhone Use
 
-Windows 上的 Codex 本機外掛。Codex 用 stdio 啟動手機工具，USB 後端能看畫面、點擊和打字；Pinky 和 iSH 是可分別選用的功能。外掛名稱為 **Iphone use (Standalone)**，識別碼為 `iphone-use-standalone`。
+**讓 AI 看見、操作你的 iPhone，也能在手機上跑程式。**<br><br>
+在 Windows 上用 Codex 連接自己的 iPhone。Pinky 用來操作 App，iSH Shell 用來讀檔、改碼和跑測試，USB 工具則能用資料線直接看畫面、點按和輸入。每套都有獨立的下載檔與安裝說明。
 
-## 先選你想用的功能
+## 下載你要的功能
 
-同一個 Codex 外掛可以單選或組合安裝。新開的 Codex 對話只會列出所選功能的工具。
-
-| 想做的事 | 下載 | 安裝和啟用 |
+| 功能 | Windows 外掛下載 | 配對與使用 |
 | --- | --- | --- |
-| **Pinky** · 依名稱點選、切換分頁、批次操作 | 電腦：[Pinky 官方 Windows 下載](https://github.com/DIYgod/pinky/releases/latest) | [只安裝 Pinky，含手機配對與驗證](docs/pinky.md) |
-| **iSH Shell** · 讀寫工作區檔案、改程式、跑測試 | 手機：[iSH Shell App Store](https://apps.apple.com/app/ish-shell/id1436902243) | [只安裝 iSH Shell，含 USB 配對與驗證](docs/ish.md) |
-| **USB 畫面與手勢** · 直接看畫面、點擊、滑動、輸入 | 電腦：[Apple Devices](https://apps.microsoft.com/detail/9np83lwlpz9k) | [直接 USB 操作](#真機畫面與操作) |
-| **iSH 背景批次** · 執行已開始的工作時切換 App | [iSH Workspace 建置與下載](https://github.com/owen201913-cmd/iphone-use/actions/workflows/ios-workspace.yml) | [背景版安裝、簽署與配對](docs/ish.md#選用背景工作) |
+| **Pinky** · 依控制項名稱操作、導航、批次點按 | [下載 Pinky ZIP](https://github.com/owen201913-cmd/iphone-use/raw/refs/heads/main/downloads/iphone-use-pinky.zip) | [Pinky 安裝指南](docs/pinky.md) · [Pinky 官方程式](https://github.com/DIYgod/pinky/releases/latest) |
+| **iSH Shell** · 在 iPhone 的 Linux 工作區讀寫檔案、跑程式 | [下載 iSH ZIP](https://github.com/owen201913-cmd/iphone-use/raw/refs/heads/main/downloads/iphone-use-ish.zip) | [iSH 安裝指南](docs/ish.md) · [iPhone App Store](https://apps.apple.com/app/ish-shell/id1436902243) |
+| **USB 控制** · 看畫面、滑動、點擊、輸入 | [下載 USB ZIP](https://github.com/owen201913-cmd/iphone-use/raw/refs/heads/main/downloads/iphone-use-usb.zip) | [USB 安裝指南](docs/usb.md) |
+
+將選好的 ZIP 解壓到打算長期保留的目錄。每包都有自己的 `README.md` 與 `install.ps1`，安裝不同包可並存。iSH 的背景批次是額外選項，使用一般終端只需 App Store 版。[背景版下載與簽署](docs/ish.md#選用背景工作)
 
 ## Windows 快速開始
 
-先安裝 [Codex CLI](https://developers.openai.com/codex/cli/) 和 [Node.js 22.16 以上](https://nodejs.org/en/download)，確認 PowerShell 能執行 `codex plugin --help`、`node -v` 及 `npm.cmd -v`。[下載本外掛 ZIP](https://github.com/owen201913-cmd/iphone-use/archive/refs/heads/main.zip) 並解壓縮到打算保留的位置，或用 Git 下載：
+單功能下載請依上方對應指南安裝。如果要開發外掛，或希望用同一個外掛管理多項功能，再[下載完整原始碼](https://github.com/owen201913-cmd/iphone-use/archive/refs/heads/main.zip)或使用 Git：
 
 ```powershell
 git clone https://github.com/owen201913-cmd/iphone-use.git
@@ -62,8 +62,10 @@ USB 畫面後端使用 iOS 17.4 起提供的 CoreDeviceProxy。手機還須提�
 
 ## 本機資料與停用
 
-每個 Windows 使用者的設定、USB 環境、SSH 身分及回執存於 `%LOCALAPPDATA%\IphoneUseCodex`。可在安裝前設定絕對路徑 `IPHONE_USE_HOME` 來完全隔離測試資料。外掛初次安裝時預設停用手機存取。使用 `npm run setup -- disable` 撤銷存取；使用 `codex plugin remove iphone-use-standalone@iphone-use-local` 移除這份外掛。保留專案目錄與個人狀態在你自己的電腦上。
+完整原始碼版的設定、USB 環境、SSH 身分及回執存於 `%LOCALAPPDATA%\IphoneUseCodex`。可在安裝前設定絕對路徑 `IPHONE_USE_HOME` 來完全隔離測試資料。外掛初次安裝時預設停用手機存取。使用 `npm run setup -- disable` 撤銷存取；使用 `codex plugin remove iphone-use-standalone@iphone-use-local` 移除這份外掛。獨立 ZIP 的設定各自存放於同一根目錄下的 `packages/pinky`、`packages/ish` 或 `packages/usb`。各包的移除指令在對應指南。
 
 ## 開發與授權
 
 執行 `npm ci --ignore-scripts`、`npm test` 和 `py -3 -B -m unittest discover -s test -p "test_*.py"`。GitHub 的 `Windows tests` 會跑這些測試並匯入 USB 驅動套件。測試使用模擬裝置、本機 SSH 和測試 IPA。實體手勢、App 簽署和手機背景執行可依[真機驗收步驟](docs/guide.md#真機驗收)測試。[專案授權](LICENSE) · [第三方元件](NOTICE.md)
+
+變更功能或安裝指南後，執行 `py -3 scripts/build-downloads.py` 更新 `downloads/` 中的三個 ZIP。CI 會比對公開下載檔與原始碼。

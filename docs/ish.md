@@ -1,13 +1,14 @@
 # 用 iSH Shell 讀檔、改程式、跑測試
 
+**讓 AI 在 iPhone 的 Linux 工作區讀檔、改碼、跑測試。**<br><br>
 這條路徑只需要 iSH。Codex 會列出 `iphone_workspace` 和背景回執工具 `iphone_receipt`。一般終端可直接使用 App Store 版本，簽署與編譯只在選用背景工作時才需要。
 
 1. **手機下載。** 在 iPhone 開啟 [App Store 的 iSH Shell](https://apps.apple.com/app/ish-shell/id1436902243) 並安裝。開發者為 Theodore Dubois。[iSH 官網](https://ish.app/)
-2. **電腦準備。** [下載本外掛並解壓縮](https://github.com/owen201913-cmd/iphone-use/archive/refs/heads/main.zip)，準備 [Codex CLI](https://developers.openai.com/codex/cli/)、[Node.js 22.16 以上](https://nodejs.org/en/download)、[Python for Windows（含 py 啟動器）](https://www.python.org/downloads/windows/) 和 [Apple Devices](https://apps.microsoft.com/detail/9np83lwlpz9k)。以 USB 接上一支已解鎖並信任這台電腦的 iPhone。
+2. **電腦準備。** [下載 iSH 專用 ZIP 並解壓縮](https://github.com/owen201913-cmd/iphone-use/raw/refs/heads/main/downloads/iphone-use-ish.zip)，準備 [Codex CLI](https://developers.openai.com/codex/cli/)、[Node.js 22.16 以上](https://nodejs.org/en/download)、[Python for Windows（含 py 啟動器）](https://www.python.org/downloads/windows/) 和 [Apple Devices](https://apps.microsoft.com/detail/9np83lwlpz9k)。以 USB 接上一支已解鎖並信任這台電腦的 iPhone。
 3. **安裝與配對。** 在含 `install.ps1` 的目錄開 PowerShell。一般 iSH 使用 Python 標準函式庫連接 USB，單選時會略過畫面控制用的 Python 套件。
 
 ```powershell
-.\install.ps1 -Features Ish
+.\install.ps1
 npm run setup -- enable
 node scripts/setup.mjs ish-script
 ```
@@ -34,3 +35,5 @@ py -3 ios/personalize.py iSH-Workspace.ipa iSH-Workspace-Local.ipa $publicKey
 
 3. 使用自己的 Apple 簽署身分把個人化後的 IPA 裝到 iPhone。Windows 可使用 [Sideloadly 官方下載及安裝說明](https://sideloadly.io/)。若簽署工具會在原 Bundle ID 後加識別尾碼，請在上一步加上 `--signed-bundle-id` 與實際 ID，並選一個新的輸出檔名。
 4. 打開手機的 **iSH Workspace**，核對它顯示的指紋。電腦執行 `node scripts/pair-ish-usb.mjs "SHA256:<背景版顯示的指紋>" --background`。請 Codex 提交一批輸出 `OK` 的背景工作，在手機按「開始」，切到其他 App，再查同一個任務 ID 的輸出。iOS 管理背景執行時間。[工作區操作與回執](guide.md#ish-工作區與背景工作)
+
+移除本包可執行 `codex plugin remove iphone-use-ish@iphone-use-ish-local`。

@@ -8,10 +8,22 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $projectDir = $PSScriptRoot
-$stateDir = if ($env:IPHONE_USE_HOME) { $env:IPHONE_USE_HOME } else { Join-Path $env:LOCALAPPDATA 'IphoneUseCodex' }
-if (-not [IO.Path]::IsPathRooted($stateDir)) { throw 'Use an absolute IPHONE_USE_HOME path.' }
+$stateBase = if ($env:IPHONE_USE_HOME) { $env:IPHONE_USE_HOME } else { Join-Path $env:LOCALAPPDATA 'IphoneUseCodex' }
+if (-not [IO.Path]::IsPathRooted($stateBase)) { throw 'Use an absolute IPHONE_USE_HOME path.' }
+$stateDir = $stateBase
 $pluginId = 'iphone-use-standalone'
 $marketName = 'iphone-use-local'
+$edition = (Get-Content -LiteralPath (Join-Path $projectDir 'package.json') -Raw | ConvertFrom-Json).iphoneUseFeature
+if ($null -ne $edition) {
+    if ($edition -notin @('pinky','ish','usb')) { throw 'Unknown download package.' }
+    if ($PSBoundParameters.ContainsKey('Features') -and ($Features.Count -ne 1 -or $Features[0] -ne $edition)) {
+        throw "This download contains only $edition."
+    }
+    $Features = @($edition)
+    $stateDir = Join-Path $stateBase "packages/$edition"
+    $pluginId = "iphone-use-$edition"
+    $marketName = "$pluginId-local"
+}
 $marketDir = Join-Path $stateDir 'marketplace'
 $pluginDir = Join-Path $marketDir "plugins/$pluginId"
 $nodeExe = (Get-Command node.exe -ErrorAction Stop).Source
@@ -44,7 +56,7 @@ try {
     $manifestDir = Join-Path $pluginDir '.codex-plugin'
     $null = [IO.Directory]::CreateDirectory($manifestDir)
     Copy-Item -LiteralPath 'plugin/.codex-plugin/plugin.json' -Destination (Join-Path $manifestDir 'plugin.json') -Force
-    $launch = @{command=$nodeExe; args=@((Join-Path $projectDir 'server.mjs')); env=@{IPHONE_USE_HOME=$stateDir}}
+    $launch = @{command=$nodeExe; args=@((Join-Path $projectDir 'server.mjs')); env=@{IPHONE_USE_HOME=$stateBase}}
     Write-JsonFile (Join-Path $pluginDir '.mcp.json') @{mcpServers=@{$pluginId=$launch}}
     $entry = @{name=$pluginId;source=@{source='local';path="./plugins/$pluginId"};category='Productivity';policy=@{installation='AVAILABLE';authentication='ON_INSTALL'}}
     Write-JsonFile (Join-Path $marketDir '.agents/plugins/marketplace.json') @{name=$marketName;interface=@{displayName='iPhone Use Local'};plugins=@($entry)}

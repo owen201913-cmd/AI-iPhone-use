@@ -3,6 +3,7 @@ import { mkdir, readFile, link, unlink, rename, writeFile, realpath, lstat, acce
 import { basename, join, resolve } from 'node:path';
 import ssh2 from 'ssh2';
 import { stateRoot, usbPython } from '../lib/paths.mjs';
+import { installedFeatures } from '../lib/features.mjs';
 import { createPermissions, policyFile } from '../lib/permissions.mjs';
 import { resolveIshDevice } from '../lib/ish-usb.mjs';
 import { pairingDirectory } from '../lib/phone-workspace.mjs';
@@ -45,17 +46,20 @@ async function identity() {
 async function main() {
   const [cmd, ...args] = process.argv.slice(2);
   if (cmd === 'doctor' && !args.length) {
+    const features = await installedFeatures();
     const files = [
-      ['USB Python runtime', usbPython, 'Run install.ps1 without -SkipUsb'],
-      ['USB device registration', join(stateRoot,'iphone-usb-ui','config.json'), 'Connect one unlocked iPhone, then run npm run setup -- usb'],
-      ['Pinky executable registration', join(stateRoot,'pinky.json'), 'Run npm run setup -- pinky "<path to Pinky.exe>"'],
-      ['iSH standard pairing', join(pairingDirectory,'device.json'), 'Run ish-script and verify its fingerprint with pair-ish-usb.mjs'],
-      ['iSH background pairing', join(pairingDirectory,'device-background.json'), 'Install the personalized iSH Workspace and pair with --background'],
+      [features.has('usb') || features.has('ish'), 'USB Python runtime', usbPython, 'Repeat installation with the same -Features selection'],
+      [features.has('usb'), 'USB device registration', join(stateRoot,'iphone-usb-ui','config.json'), 'Connect one unlocked iPhone, then run npm run setup -- usb'],
+      [features.has('pinky'), 'Pinky executable registration', join(stateRoot,'pinky.json'), 'Run npm run setup -- pinky "<path to Pinky.exe>"'],
+      [features.has('ish'), 'iSH standard pairing', join(pairingDirectory,'device.json'), 'For standard iSH, run ish-script and verify its fingerprint with pair-ish-usb.mjs'],
+      [features.has('ish'), 'iSH background pairing', join(pairingDirectory,'device-background.json'), 'For optional background jobs, install iSH Workspace and pair with --background'],
     ];
     const enabled = (await createPermissions().status()).enabled;
     console.log('Phone access: ' + (enabled ? 'enabled' : 'disabled (npm run setup -- enable)'));
+    console.log('Selected features: ' + [...features].join(', '));
     console.log('Local files only. Verify the live connection in Codex.');
-    for (const [label,file,hint] of files) {
+    for (const [applies,label,file,hint] of files) {
+      if (!applies) continue;
       let status = 'present';
       try { await access(file); }
       catch (err) { status = err.code === 'ENOENT' ? 'missing' : 'unreadable'; }

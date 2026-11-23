@@ -7,6 +7,30 @@ import { fileURLToPath } from 'node:url';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 
+const groups = {pinky:['pinky'], ish:['iphone_receipt','iphone_workspace'], usb:['iphone_screen','iphone_usb']};
+for (const names of [['pinky'], ['ish'], ['usb'], ['pinky','ish']]) {
+  test('Codex advertises only the selected tools: ' + names.join(', '), async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'iphone-features-'));
+    const client = new Client({name:'feature-test',version:'1'});
+    try {
+      await writeFile(join(dir,'features.json'), JSON.stringify(names));
+      const transport = new StdioClientTransport({command:process.execPath,
+        args:[fileURLToPath(new URL('../server.mjs',import.meta.url))],cwd:dir,
+        env:{IPHONE_USE_HOME:dir},stderr:'ignore'});
+      await client.connect(transport);
+      const expected = names.flatMap(name => groups[name]).sort();
+      assert.deepEqual((await client.listTools()).tools.map(tool => tool.name).sort(), expected);
+      const hidden = names.includes('usb') ? 'iphone_workspace' : 'iphone_screen';
+      const response = await client.callTool({name:hidden, arguments:{}});
+      assert.equal(response.isError,true);
+      assert.match(response.content[0].text, /not found|unknown tool/i);
+    } finally {
+      await client.close();
+      await rm(dir,{recursive:true,force:true});
+    }
+  });
+}
+
 test('Codex stdio lists only phone tools, works from an unrelated cwd, and observes local revocation',async () => {
   const dir = await mkdtemp(join(tmpdir(),'iphone-codex-'));
   const client = new Client({name:'codex-smoke',version:'1'});

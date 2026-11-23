@@ -1,5 +1,10 @@
 [CmdletBinding()]
-param([switch]$SkipUsb)
+param(
+    [ValidateNotNullOrEmpty()]
+    [ValidateSet('Usb','Pinky','Ish')]
+    [string[]]$Features = @('Usb','Pinky','Ish'),
+    [switch]$SkipUsb
+)
 
 $ErrorActionPreference = 'Stop'
 $projectDir = $PSScriptRoot
@@ -23,16 +28,18 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Install Node.js 22.16 or later.' }
     & npm.cmd ci --ignore-scripts --no-audit --no-fund
     if ($LASTEXITCODE -ne 0) { throw 'Node dependency installation failed.' }
-    if (-not $SkipUsb) {
+    if (-not $SkipUsb -and ($Features -contains 'Usb' -or $Features -contains 'Ish')) {
         $python = Join-Path $stateDir 'venv/Scripts/python.exe'
         if (-not (Test-Path -LiteralPath $python)) {
             & py.exe -3 -m venv (Join-Path $stateDir 'venv')
             if ($LASTEXITCODE -ne 0) { throw 'Python environment creation failed.' }
         }
-        & $python -I -m pip install --disable-pip-version-check -r requirements.txt
-        if ($LASTEXITCODE -ne 0) { throw 'USB dependency installation failed.' }
-        & $python -I -B -c "import runpy; runpy.run_path('scripts/iphone-usb-ui.py')"
-        if ($LASTEXITCODE -ne 0) { throw 'USB backend import failed.' }
+        if ($Features -contains 'Usb') {
+            & $python -I -m pip install --disable-pip-version-check -r requirements.txt
+            if ($LASTEXITCODE -ne 0) { throw 'USB dependency installation failed.' }
+            & $python -I -B -c "import runpy; runpy.run_path('scripts/iphone-usb-ui.py')"
+            if ($LASTEXITCODE -ne 0) { throw 'USB backend import failed.' }
+        }
     }
     $manifestDir = Join-Path $pluginDir '.codex-plugin'
     $null = [IO.Directory]::CreateDirectory($manifestDir)
@@ -45,5 +52,12 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Codex could not register the local marketplace.' }
     & codex plugin add "$pluginId@$marketName"
     if ($LASTEXITCODE -ne 0) { throw 'Codex could not install the plugin.' }
-    Write-Output "Installed $pluginId. Open a new Codex session. Device access is configured separately."
+    $featurePath = Join-Path $stateDir 'features.json'
+    $staged = "$featurePath.$([Guid]::NewGuid()).tmp"
+    try {
+        Write-JsonFile $staged @($Features | ForEach-Object { $_.ToLowerInvariant() } | Select-Object -Unique)
+        if ([IO.File]::Exists($featurePath)) { [IO.File]::Replace($staged, $featurePath, [NullString]::Value) }
+        else { [IO.File]::Move($staged, $featurePath) }
+    } finally { [IO.File]::Delete($staged) }
+    Write-Output "Installed $pluginId ($($Features -join ', ')). Open a new Codex session. Device access is configured separately."
 } finally { Pop-Location }

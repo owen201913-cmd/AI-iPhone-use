@@ -2,27 +2,37 @@
 
 Windows 上的 Codex 本機外掛。Codex 用 stdio 啟動手機工具，USB 後端能看畫面、點擊和打字；Pinky 和 iSH 是可分別選用的功能。外掛名稱為 **Iphone use (Standalone)**，識別碼為 `iphone-use-standalone`。
 
-**第一次使用**先走下方 USB 快速開始。只想看畫面、點按或打字，完成這一段就夠了。要用文字名稱找按鈕、在手機上改程式、或切出 App 後跑工作，再依功能配對 Pinky 或 iSH。[完整功能、啟用對照與排錯](docs/guide.md)
+## 先選你想用的功能
+
+同一個 Codex 外掛可以單選或組合安裝。新開的 Codex 對話只會列出所選功能的工具。
+
+| 想做的事 | 下載 | 安裝和啟用 |
+| --- | --- | --- |
+| **Pinky** · 依名稱點選、切換分頁、批次操作 | 電腦：[Pinky 官方 Windows 下載](https://github.com/DIYgod/pinky/releases/latest) | [只安裝 Pinky，含手機配對與驗證](docs/pinky.md) |
+| **iSH Shell** · 讀寫工作區檔案、改程式、跑測試 | 手機：[iSH Shell App Store](https://apps.apple.com/app/ish-shell/id1436902243) | [只安裝 iSH Shell，含 USB 配對與驗證](docs/ish.md) |
+| **USB 畫面與手勢** · 直接看畫面、點擊、滑動、輸入 | 電腦：[Apple Devices](https://apps.microsoft.com/detail/9np83lwlpz9k) | [直接 USB 操作](#真機畫面與操作) |
+| **iSH 背景批次** · 執行已開始的工作時切換 App | [iSH Workspace 建置與下載](https://github.com/owen201913-cmd/iphone-use/actions/workflows/ios-workspace.yml) | [背景版安裝、簽署與配對](docs/ish.md#選用背景工作) |
 
 ## Windows 快速開始
 
-在 PowerShell 執行 `node -v`、`npm.cmd -v`、`codex plugin --help`、`py -3 --version`，可先確認本機指令是否可用。需要安裝時可從官方取得 [Node.js](https://nodejs.org/en/download)、[Codex CLI](https://developers.openai.com/codex/cli/)、[Python for Windows](https://www.python.org/downloads/windows/) 和 [Apple Devices](https://apps.microsoft.com/detail/9np83lwlpz9k)。
-
-準備 Windows、有 `codex plugin` 子命令的 Codex CLI、Node.js 22.16 以上與 npm。USB 功能還需要 Apple Mobile Device USB 服務、Python 與 `py.exe`。已測 Python 3.14。可以用 Git 下載到長期保留的位置：
+先安裝 [Codex CLI](https://developers.openai.com/codex/cli/) 和 [Node.js 22.16 以上](https://nodejs.org/en/download)，確認 PowerShell 能執行 `codex plugin --help`、`node -v` 及 `npm.cmd -v`。[下載本外掛 ZIP](https://github.com/owen201913-cmd/iphone-use/archive/refs/heads/main.zip) 並解壓縮到打算保留的位置，或用 Git 下載：
 
 ```powershell
 git clone https://github.com/owen201913-cmd/iphone-use.git
 cd iphone-use
 ```
 
-也可以選 GitHub 的 **Code → Download ZIP**，解壓縮後在含 `install.ps1` 的目錄開啟 PowerShell。接著安裝並允許這份外掛存取手機：
+在含 `install.ps1` 的目錄開啟 PowerShell，**從下表選一行**。iSH 或直接 USB 操作還需 [Python for Windows](https://www.python.org/downloads/windows/)（含 `py.exe`，已測 3.14）。Windows 的 iPhone USB 裝置服務可由 [Apple Devices](https://apps.microsoft.com/detail/9np83lwlpz9k) 提供。
 
-```powershell
-.\install.ps1
-npm run setup -- enable
-```
+| 組合 | PowerShell 安裝指令 |
+| --- | --- |
+| 只用 Pinky | `.\install.ps1 -Features Pinky` |
+| 只用 iSH Shell 或 iSH Workspace | `.\install.ps1 -Features Ish` |
+| 同時用 Pinky 與 iSH | `.\install.ps1 -Features Pinky,Ish` |
+| 只用直接 USB 畫面與手勢 | `.\install.ps1 -Features Usb` |
+| 三種都用 | `.\install.ps1` |
 
-安裝程式會裝入鎖定的 Node 套件、建立 USB 專用 Python 環境，並向 Codex 註冊本機 marketplace 及外掛。開新的 Codex 對話即可看到工具。只使用 Pinky 時可執行 `.\install.ps1 -SkipUsb`。移動專案後，重新執行安裝程式更新路徑。
+接著執行 `npm run setup -- enable`，照所選功能的指南完成配對，再開一個新的 Codex 對話。想加減功能時，以新的組合重跑安裝即可，已有的配對資料會保留。`npm run setup -- doctor` 可查看所選功能的本機設定。[完整工具清單與排錯](docs/guide.md)
 
 ## 真機畫面與操作
 
@@ -44,32 +54,11 @@ USB 畫面後端使用 iOS 17.4 起提供的 CoreDeviceProxy。手機還須提�
 
 ## 選用 Pinky
 
-從 [Pinky 官方專案](https://github.com/DIYgod/pinky) 安裝相容且 Windows 允許啟動的版本，再登錄可執行檔。例如：
-
-```powershell
-npm run setup -- pinky "C:\Path\To\Pinky.exe"
-```
-
-第一次連線在 Pinky 授權；程式更新後需重新登錄執行檔雜湊。USB 工具可獨立運作。每個上游版本提供的語意控制項以 `pinky` 的工具清單為準。
+[官方下載、各 iOS 版本的手機端需求、Windows 安裝與第一次連線](docs/pinky.md)
 
 ## 選用 iSH 工作區
 
-**一般終端。** 在手機從 [App Store 安裝 iSH Shell](https://apps.apple.com/app/ish-shell/id1436902243) 並開啟。以 `node scripts/setup.mjs ish-script` 產生使用本機公鑰的完整設定，將輸出貼到該 iSH 的 root 終端機。它會安裝 OpenSSH、建立專用帳號、在手機 loopback 的 22482 連接埠啟動服務，並顯示公開主機指紋。核對手機螢幕後在電腦上執行：
-
-```powershell
-node scripts/pair-ish-usb.mjs "SHA256:<手機顯示的指紋>"
-```
-
-若既有 iSH 已和另一份外掛配對，請保留那份設定；獨立副本可改用另一個 App 實例。一般工作請讓 iSH 保持可用。
-
-**背景批次。** 在 GitHub 手動執行 `Build iSH Workspace`，或依 [.github/workflows/ios-workspace.yml](.github/workflows/ios-workspace.yml) 用 macOS 和 Xcode 編譯。從該次建置下載並解壓縮未簽署的 IPA。在 Windows 本機執行：
-
-```powershell
-$publicKey = node scripts/setup.mjs identity
-py -3 ios/personalize.py iSH-Workspace.ipa iSH-Workspace-Local.ipa $publicKey
-```
-
-使用自己的 Apple 簽署身分安裝本機產出的 IPA。若簽署工具會在原本的 Bundle ID 後面加上識別尾碼，在個人化時以 `--signed-bundle-id` 指定實際 ID，讓背景工作的識別碼一致。開啟 App、核對手機指紋，再執行 `node scripts/pair-ish-usb.mjs "SHA256:<手機顯示的指紋>" --background`。背景功能需 iOS 26 以上與前景確認開始，每批 1–10 步；可用時間由 iOS 管理。編譯使用的 macOS Actions 配額取決於自己的 GitHub 帳戶。
+[一般 iSH Shell 下載、安裝與配對](docs/ish.md) · [iSH Workspace 背景版下載與簽署](docs/ish.md#選用背景工作)
 
 ## 本機資料與停用
 

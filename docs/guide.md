@@ -1,12 +1,12 @@
 # 功能、啟用與驗收
 
-先照 [Windows 快速開始](../README.md#windows-快速開始) 安裝。所有 `npm` 和 `node` 指令都在專案目錄的 PowerShell 執行。Codex 裡則可直接用中文描述目標。
+首次安裝可直接選 [Pinky 安裝指南](pinky.md)、[iSH Shell 安裝指南](ish.md)，或選擇 [USB 與其他組合](../README.md#windows-快速開始)。所有 `npm` 和 `node` 指令都在專案目錄的 PowerShell 執行。Codex 裡則可直接用中文描述目標。
 
 | 我想做什麼 | 開啟功能 | 怎麼知道成功 |
 | --- | --- | --- |
 | 看手機畫面、操作前景 App | 插上 USB，解鎖並信任電腦。執行 `npm run setup -- enable` 和 `npm run setup -- usb`。連接一支手機即可。 | 在新的 Codex 對話說「用 Iphone use (Standalone) 看現在畫面」。應看到 PNG 與觀察 ID。 |
-| 按控制項名稱找分頁、連續導航 | 安裝官方 Pinky，連接裝置。用 `npm run setup -- pinky "C:\Path\To\Pinky.exe"` 登錄實際路徑，在 Pinky 允許工作。 | 請 Codex 列出 `pinky` 的 `tools`。再要求在「時鐘」開啟一個有名稱的分頁。 |
-| 讀檔、改程式、跑測試 | 完整安裝 USB 環境。開啟手機上的一般 iSH，執行[終端配對步驟](../README.md#選用-ish-工作區)。 | 說「用一般 iSH 執行 `pwd` 和 `printf 'OK\n'`，回報輸出與結束碼」。應在 `~/workspace`，結束碼為 0。 |
+| 按控制項名稱找分頁、連續導航 | 依 [Pinky 安裝指南](pinky.md) 安裝並連接裝置。用 `npm run setup -- pinky "C:\Path\To\Pinky.exe"` 登錄實際路徑，在 Pinky 允許工作。 | 請 Codex 列出 `pinky` 的 `tools`。再要求在「時鐘」開啟一個有名稱的分頁。 |
+| 讀檔、改程式、跑測試 | 單選 `-Features Ish`，開啟手機的 iSH Shell，執行[終端配對步驟](ish.md)。 | 說「用一般 iSH 執行 `pwd` 和 `printf 'OK\n'`，回報輸出與結束碼」。應在 `~/workspace`，結束碼為 0。 |
 | 開始一批工作後，切走使用其他 App | 使用 iOS 26 以上，編譯、個人化、自己簽署並安裝 iSH Workspace，以 `--background` 配對。每批在手機按「開始」。 | 說「用 iSH Workspace 提交一批背景工作，輸出 OK，完成後查回執」。應取得同一個任務 ID 的輸出與結束碼。 |
 
 `npm run setup -- doctor` 可隨時檢查本機存取開關、USB Python、裝置登錄、Pinky 與兩種 iSH 配對檔。這項檢查在手機未連接時也能使用，實際連線請用上表右欄確認。想看 Codex 已安裝的本機外掛，可執行 `codex plugin list --marketplace iphone-use-local`。
@@ -39,7 +39,7 @@
 
 背景版的 `background` 接受一行標題和 1–10 段依序執行的指令，每段最多 60 秒。手機顯示標題後由使用者按「開始」。呼叫可附 `waitMs` 最多等 40 秒，或使用 `queueUntilOpenMs` 在目前外掛工作階段中等 App 開啟（最多 10 分鐘）。`cancel_wait` 僅取消尚待派送的等候。工作已派送時依原 `requestId` 用 `iphone_receipt` 查詢。前景作業的回執請用 `iphone_workspace` 的 `receipt` 並選相同環境。
 
-**自行建立背景版。** 在自己的 GitHub fork 開啟 **Actions → Build iSH Workspace → Run workflow**。成功後在該次執行的 **Artifacts** 下載 `iSH-Workspace-unsigned`，解壓縮得到 IPA。依 [README 的個人化與配對指令](../README.md#選用-ish-工作區) 把這台電腦的公鑰寫入本機 IPA。用支援的 Apple 簽署工具安裝到自己的裝置；在 Windows 可於 Sideloadly 選取 iPhone 與個人化後的 IPA，使用自己的 Apple 帳號完成簽署。若 iOS 要求信任開發者，請在「設定 → 一般 → VPN 與裝置管理」選自己的簽署身分。完成後開啟 **iSH Workspace**，讀取該 App 的主機指紋並在電腦配對。私鑰保留在電腦。已個人化 IPA 與簽署資料應留在本機。
+**自行建立背景版。** 在自己的 GitHub fork 開啟 **Actions → Build iSH Workspace → Run workflow**。成功後在該次執行的 **Artifacts** 下載 `iSH-Workspace-unsigned`，解壓縮得到 IPA。依 [背景版下載、個人化與配對指令](ish.md#選用背景工作) 把這台電腦的公鑰寫入本機 IPA。用支援的 Apple 簽署工具安裝到自己的裝置；在 Windows 可於 Sideloadly 選取 iPhone 與個人化後的 IPA，使用自己的 Apple 帳號完成簽署。若 iOS 要求信任開發者，請在「設定 → 一般 → VPN 與裝置管理」選自己的簽署身分。完成後開啟 **iSH Workspace**，讀取該 App 的主機指紋並在電腦配對。私鑰保留在電腦。已個人化 IPA 與簽署資料應留在本機。
 
 ## 真機驗收
 
@@ -52,7 +52,7 @@
 
 | 提示或現象 | 處理方式 |
 | --- | --- |
-| Codex 沒顯示手機工具 | 從保留的專案目錄重新執行 `.\install.ps1`，用 `codex plugin list --marketplace iphone-use-local` 確認安裝，開一個新的 Codex 對話。 |
+| Codex 沒顯示手機工具 | 從保留的專案目錄用原來的 `-Features` 選項重新執行安裝，用 `codex plugin list --marketplace iphone-use-local` 確認安裝，開一個新的 Codex 對話。 |
 | `Phone access is disabled` | 在 PowerShell 執行 `npm run setup -- enable`。使用完畢可用 `npm run setup -- disable` 撤銷。 |
 | USB 未登錄、配對裝置找不到 | 檢查 Windows 是否能在 Apple Devices 看見手機、資料線是否支援傳輸、手機是否解鎖並信任電腦。第一次登錄時只接一支，執行 `npm run setup -- usb`。 |
 | `observe_again` 或 `busy` | 前者表示舊畫面已變動、過期或已用過，使用回傳的新畫面或重新觀察。後者表示裝置上另有操作，等其完成。 |
